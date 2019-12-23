@@ -1,0 +1,4 @@
+[submodule "src/github.com/tdewolff/minify"]
+	path = src/github.com/tdewolff/minify
+	url = https://github.com/tdewolff/minify.git
+	ignore = dirty
