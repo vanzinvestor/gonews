@@ -1,16 +1,30 @@
 package view
 
 import (
+	"bytes"
 	"html/template"
-	"log"
 	"net/http"
 	"path/filepath"
+	"regexp"
+
+	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/html"
+	"github.com/tdewolff/minify/js"
 )
 
 var (
 	tpIndex      = parseTemplate("root.tmpl", "index.tmpl")
 	tpAdminLogin = parseTemplate("root.tmpl", "admin/login.tmpl")
 )
+
+var m = minify.New()
+
+func init() {
+	m.AddFunc("text/html", html.Minify)
+	m.AddFunc("text/css", css.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
+}
 
 const templateDir = "template"
 
@@ -35,10 +49,13 @@ func parseTemplate(files ...string) *template.Template {
 
 func render(t *template.Template, w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err := t.Execute(w, data)
+	buf := bytes.Buffer{}
+	err := t.Execute(&buf, data)
 	if err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	m.Minify("text/html", w, &buf)
 }
 
 // Index renders index view
